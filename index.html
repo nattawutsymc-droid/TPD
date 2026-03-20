@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiber Planning Management</title>
+    
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Prompt', 'sans-serif'] },
+                    colors: { primary: '#f97316', 'primary-hover': '#ea580c' }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome & SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; }
+        .sidebar-item.active { background-color: #fff7ed; color: #ea580c; border-right: 4px solid #ea580c; font-weight: 500;}
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #f97316; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Hide scrollbar for clean minimal look */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-white w-72 flex-shrink-0 border-r border-gray-100 flex flex-col transition-transform transform -translate-x-full lg:translate-x-0 fixed lg:relative z-30 h-full shadow-sm">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <i class="fa-solid fa-network-wired text-primary text-2xl mr-3"></i>
+            <h1 class="text-xl font-bold text-gray-800 tracking-wide">Fiber<span class="text-primary">Plan</span></h1>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto py-4">
+            <!-- Menu 1 -->
+            <div class="mb-6">
+                <div class="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">ระบบจัดเก็บ</div>
+                <a href="#" onclick="navigate('menu1_project')" class="sidebar-item active flex items-center px-6 py-3 text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors">
+                    <i class="fa-solid fa-folder-open w-6 text-center mr-2"></i> Project Fiber Network
+                </a>
+            </div>
+
+            <!-- Menu 2 -->
+            <div class="mb-6">
+                <div class="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Create Code</div>
+                <a href="#" onclick="navigate('menu2_route')" class="sidebar-item flex items-center px-6 py-3 text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors">
+                    <i class="fa-solid fa-route w-6 text-center mr-2"></i> Create Code Route
+                </a>
+                <a href="#" onclick="navigate('menu2b_building')" class="sidebar-item flex items-center px-6 py-3 text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors">
+                    <i class="fa-regular fa-building w-6 text-center mr-2"></i> Create Code Building
+                </a>
+            </div>
+
+            <!-- Menu 3 -->
+            <div class="mb-6">
+                <div class="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Assign Region & TPD</div>
+                <a href="#" onclick="navigate('menu3_assign')" class="sidebar-item flex items-center justify-between px-6 py-3 text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors">
+                    <div class="flex items-center">
+                        <i class="fa-solid fa-tasks w-6 text-center mr-2"></i> Create Project
+                    </div>
+                    <span id="assignBadge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center text-sm text-gray-500">
+                <i class="fa-solid fa-circle-user text-2xl mr-2 text-gray-300"></i>
+                <div>
+                    <p class="font-medium text-gray-700">Admin User</p>
+                    <p class="text-xs">System Administrator</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 relative">
+        <!-- Top Header -->
+        <header class="h-16 glass-panel flex items-center justify-between px-6 z-10 sticky top-0">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-primary mr-4 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <h2 id="pageTitle" class="text-lg font-semibold text-gray-800">Project Fiber Network Management</h2>
+            </div>
+            <div id="globalLoader" class="hidden items-center text-primary text-sm font-medium">
+                <div class="loader mr-2"></div> กำลังซิงค์ข้อมูล...
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            
+            <!-- VIEW 1: Project Network -->
+            <div id="view_menu1_project" class="view-section">
+                <!-- Dashboard Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-orange-100 p-3 rounded-lg text-primary mr-4"><i class="fa-solid fa-folder fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">รวมโปรเจกต์ทั้งหมด</p><h3 class="text-2xl font-bold" id="dash1_total">0</h3></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full sm:w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="search_menu1" placeholder="ค้นหา Project No..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm" onkeyup="renderTable('menu1')">
+                        </div>
+                        <button onclick="openModal('modal_menu1')" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm w-full sm:w-auto flex items-center justify-center">
+                            <i class="fa-solid fa-plus mr-2"></i> เพิ่มข้อมูล
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 border-b border-gray-100">
+                                    <th class="p-4 font-medium">Project No.</th>
+                                    <th class="p-4 font-medium">Description</th>
+                                    <th class="p-4 font-medium">ผู้รับผิดชอบ</th>
+                                    <th class="p-4 font-medium">Name NP Plan</th>
+                                    <th class="p-4 font-medium">Start Date</th>
+                                    <th class="p-4 font-medium">End Date</th>
+                                    <th class="p-4 font-medium text-center w-24">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_menu1" class="divide-y divide-gray-50 text-gray-700">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: Create Code Route -->
+            <div id="view_menu2_route" class="view-section hidden">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-orange-100 p-3 rounded-lg text-primary mr-4"><i class="fa-solid fa-barcode fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">Code Route ทั้งหมด</p><h3 class="text-2xl font-bold" id="dash2_total">0</h3></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full md:w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="search_menu2" placeholder="ค้นหาด้วย 2 หลักแรก..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm" onkeyup="renderTable('menu2')">
+                        </div>
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                            <input type="file" id="importFile" accept=".csv" class="hidden" onchange="handleImport(event)">
+                            <button onclick="document.getElementById('importFile').click()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-file-import mr-2"></i> Import
+                            </button>
+                            <button onclick="handleExport()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-file-export mr-2"></i> Export
+                            </button>
+                            <button onclick="openModal('modal_menu2')" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-plus mr-2"></i> สร้าง Code Route
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 border-b border-gray-100">
+                                    <th class="p-4 font-medium">Code Route</th>
+                                    <th class="p-4 font-medium">Description</th>
+                                    <th class="p-4 font-medium text-center w-24">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_menu2" class="divide-y divide-gray-50 text-gray-700">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: Assign Project -->
+            <div id="view_menu3_assign" class="view-section hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-yellow-100 p-3 rounded-lg text-yellow-600 mr-4"><i class="fa-solid fa-clock fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">Wait assign Project</p><h3 class="text-2xl font-bold" id="dash3_wait">0</h3></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-green-100 p-3 rounded-lg text-green-600 mr-4"><i class="fa-solid fa-check-circle fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">Assigned</p><h3 class="text-2xl font-bold" id="dash3_done">0</h3></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-blue-100 p-3 rounded-lg text-blue-600 mr-4"><i class="fa-solid fa-hourglass-half fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">Wait Confirm Kavis</p><h3 class="text-2xl font-bold" id="dash3_kavis_wait">0</h3></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-emerald-100 p-3 rounded-lg text-emerald-600 mr-4"><i class="fa-solid fa-clipboard-check fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">Confirmed Kavis</p><h3 class="text-2xl font-bold" id="dash3_kavis_done">0</h3></div>
+                    </div>
+                </div>
+
+                <!-- TABS FOR PROJECT TYPES -->
+                <div class="flex space-x-2 border-b border-gray-200 mb-4 overflow-x-auto pb-0" id="menu3_tabs">
+                    <button onclick="setMenu3Tab('All')" class="m3-tab-btn px-4 py-2 text-sm font-medium rounded-t-lg bg-orange-100 text-primary border-b-2 border-primary whitespace-nowrap">All Projects</button>
+                    <button onclick="setMenu3Tab('Reroute&MOI')" class="m3-tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap border-b-2 border-transparent hover:border-gray-300">1. Reroute&MOI</button>
+                    <button onclick="setMenu3Tab('Underground')" class="m3-tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap border-b-2 border-transparent hover:border-gray-300">2. Underground</button>
+                    <button onclick="setMenu3Tab('Cancel,Remove Cable')" class="m3-tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap border-b-2 border-transparent hover:border-gray-300">3. Cancel,Remove Cable</button>
+                    <button onclick="setMenu3Tab('Create New Route')" class="m3-tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap border-b-2 border-transparent hover:border-gray-300">4. Create New Route</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full sm:w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="search_menu3" placeholder="ค้นหา Project..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm" onkeyup="renderTable('menu3')">
+                        </div>
+                        <button onclick="openModal('modal_menu3_create')" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm w-full sm:w-auto flex items-center justify-center">
+                            <i class="fa-solid fa-plus mr-2"></i> Create Project
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm min-w-[1000px]">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 border-b border-gray-100 whitespace-nowrap">
+                                    <th class="p-3 font-medium">Type</th>
+                                    <th class="p-3 font-medium">Status</th>
+                                    <th class="p-3 font-medium">Kavis Status</th>
+                                    <th class="p-3 font-medium">Date Request</th>
+                                    <th class="p-3 font-medium">Project Code</th>
+                                    <th class="p-3 font-medium">Assignment</th>
+                                    <th class="p-3 font-medium">Project</th>
+                                    <th class="p-3 font-medium">Cable Code</th>
+                                    <th class="p-3 font-medium">Job Description</th>
+                                    <th class="p-3 font-medium">Detail</th>
+                                    <th class="p-3 font-medium">GPS ต้นทาง</th>
+                                    <th class="p-3 font-medium">GPS ปลายทาง</th>
+                                    <th class="p-3 font-medium">Assign By</th>
+                                    <th class="p-3 font-medium">Subcontractor</th>
+                                    <th class="p-3 font-medium">Road</th>
+                                    <th class="p-3 font-medium">จุดข้ามถนน</th>
+                                    <th class="p-3 font-medium">จองรูเควิส</th>
+                                    <th class="p-3 font-medium">แบบคอนไฟฟ้า</th>
+                                    <th class="p-3 font-medium">Confirm Kavis Row</th>
+                                    <th class="p-3 font-medium text-center sticky right-0 bg-gray-50 shadow-[-5px_0_5px_-5px_rgba(0,0,0,0.1)]">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_menu3" class="divide-y divide-gray-50 text-gray-700">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- VIEW 2b: Create Code Building -->
+            <div id="view_menu2b_building" class="view-section hidden">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+                        <div class="bg-blue-100 p-3 rounded-lg text-blue-600 mr-4"><i class="fa-regular fa-building fa-lg"></i></div>
+                        <div><p class="text-sm text-gray-500">Code Building ทั้งหมด</p><h3 class="text-2xl font-bold" id="dash2b_total">0</h3></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full md:w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="search_menu2b" placeholder="ค้นหาด้วย 2 หลักแรก..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm" onkeyup="renderTable('menu2b')">
+                        </div>
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                            <input type="file" id="importFile2b" accept=".csv" class="hidden" onchange="handleImportBuilding(event)">
+                            <button onclick="document.getElementById('importFile2b').click()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-file-import mr-2"></i> Import
+                            </button>
+                            <button onclick="handleExportBuilding()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-file-export mr-2"></i> Export
+                            </button>
+                            <button onclick="openModal('modal_menu2b')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-plus mr-2"></i> สร้าง Code Building
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 border-b border-gray-100">
+                                    <th class="p-4 font-medium">Code Building</th>
+                                    <th class="p-4 font-medium">Description</th>
+                                    <th class="p-4 font-medium text-center w-24">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_menu2b" class="divide-y divide-gray-50 text-gray-700">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+    <!-- Modal: Menu 1 -->
+    <div id="modal_menu1" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800" id="title_modal_menu1">เพิ่มข้อมูล Project</h3>
+                <button onclick="closeModal('modal_menu1')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <form id="form_menu1" onsubmit="saveData(event, 'menu1')" class="p-6">
+                <input type="hidden" id="m1_id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Project No. <span class="text-red-500">*</span></label>
+                        <input type="text" id="m1_no" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ <span class="text-red-500">*</span></label>
+                        <input type="text" id="m1_owner" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
+                        <input type="text" id="m1_desc" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Name NP Plan</label>
+                        <input type="text" id="m1_np" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Plan Date</label>
+                        <input type="date" id="m1_date1" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Plan Date</label>
+                        <input type="date" id="m1_date2" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal_menu1')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-primary hover:bg-primary-hover rounded-lg text-sm font-medium transition-colors">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Menu 2 Code Route -->
+    <div id="modal_menu2" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800" id="title_modal_menu2">สร้าง Code Route</h3>
+                <button onclick="closeModal('modal_menu2')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 bg-orange-50 border-b border-orange-100">
+                <p class="text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-robot text-primary mr-1"></i> ระบบ Auto Generate (6 หลัก)</p>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="auto_ref_code" placeholder="ใส่รหัสอ้างอิง 6 หลัก เช่น BKK000" maxlength="6" class="flex-1 border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary outline-none uppercase">
+                    <select id="auto_type" class="border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-primary outline-none">
+                        <option value="1">1. Backbone (หลักร้อย)</option>
+                        <option value="2">2. Branch Joint (หลักสิบ)</option>
+                        <option value="3">3. Branch Access (หลักหน่วย)</option>
+                    </select>
+                </div>
+                <button type="button" onclick="generateCodeRoute()" class="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> เจนเนอเรตอัตโนมัติ
+                </button>
+            </div>
+            <form id="form_menu2" onsubmit="saveData(event, 'menu2')" class="p-6">
+                <input type="hidden" id="m2_id">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Code Route (ไม่ซ้ำ) <span class="text-red-500">*</span></label>
+                    <input type="text" id="m2_code" required maxlength="6" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-yellow-50 font-bold tracking-widest text-center text-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (ไม่ซ้ำ) <span class="text-red-500">*</span></label>
+                    <textarea id="m2_desc" required rows="3" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"></textarea>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal_menu2')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-primary hover:bg-primary-hover rounded-lg text-sm font-medium transition-colors">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Menu 2b Code Building -->
+    <div id="modal_menu2b" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800" id="title_modal_menu2b">สร้าง Code Building</h3>
+                <button onclick="closeModal('modal_menu2b')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 bg-blue-50 border-b border-blue-100">
+                <p class="text-sm font-medium text-gray-700 mb-2"><i class="fa-solid fa-robot text-blue-500 mr-1"></i> ระบบ Auto Generate (6 หลัก)</p>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="auto_ref_code_b" placeholder="ใส่รหัสอ้างอิง 6 หลัก เช่น BKK000" maxlength="6" class="flex-1 border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                    <select id="auto_type_b" class="border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="1">1. Backbone (หลักร้อย)</option>
+                        <option value="2">2. Branch Joint (หลักสิบ)</option>
+                        <option value="3">3. Branch Access (หลักหน่วย)</option>
+                    </select>
+                </div>
+                <button type="button" onclick="generateCodeBuilding()" class="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> เจนเนอเรตอัตโนมัติ
+                </button>
+            </div>
+            <form id="form_menu2b" onsubmit="saveData(event, 'menu2b')" class="p-6">
+                <input type="hidden" id="m2b_id">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Code Building (ไม่ซ้ำ) <span class="text-red-500">*</span></label>
+                    <input type="text" id="m2b_code" required maxlength="6" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-yellow-50 font-bold tracking-widest text-center text-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (ไม่ซ้ำ) <span class="text-red-500">*</span></label>
+                    <textarea id="m2b_desc" required rows="3" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"></textarea>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal_menu2b')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-lg text-sm font-medium transition-colors">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Menu 3 Create & Assign -->
+    <div id="modal_menu3_create" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                <h3 class="text-lg font-bold text-gray-800" id="title_modal_menu3">Create Project</h3>
+                <button onclick="closeModal('modal_menu3_create')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="overflow-y-auto p-6 flex-1">
+                <form id="form_menu3" onsubmit="saveData(event, 'menu3')">
+                    <input type="hidden" id="m3_id">
+                    <input type="hidden" id="m3_status" value="Wait assign Project">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Create Fields -->
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">ประเภทโปรเจกต์ (Project Type) <span class="text-red-500">*</span></label>
+                            <select id="m3_type" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none font-medium text-primary" onchange="toggleKavisFields()">
+                                <option value="Reroute&MOI">1. Reroute&MOI</option>
+                                <option value="Underground">2. Underground</option>
+                                <option value="Cancel,Remove Cable">3. Cancel,Remove Cable</option>
+                                <option value="Create New Route">4. Create New Route</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Date Request</label><input type="date" id="m3_date" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Project</label><input type="text" id="m3_project" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Cable Code</label><input type="text" id="m3_cable" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Job Description</label><input type="text" id="m3_job" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div class="col-span-1 md:col-span-2"><label class="block text-xs font-medium text-gray-500 mb-1">Detail</label><textarea id="m3_detail" rows="2" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></textarea></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">GPS (Lat,Lng) ต้นทาง</label><input type="text" id="m3_gps_origin" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">GPS (Lat,Lng) ปลายทาง</label><input type="text" id="m3_gps_dest" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Assign Ns By</label><input type="text" id="m3_assignby" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Subcontractor</label><input type="text" id="m3_sub" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">Road</label><input type="text" id="m3_road" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">จุดข้ามถนน</label><input type="text" id="m3_crossroad" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        
+                        <div id="wrapper_kavis_input">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">จองรูเควิส</label>
+                            <input type="text" id="m3_reserve_kavis" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none">
+                        </div>
+                        
+                        <div><label class="block text-xs font-medium text-gray-500 mb-1">แบบคอนไฟฟ้า</label><input type="text" id="m3_elec_conduit" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"></div>
+                        
+                        <!-- Assign Fields (Visible only on Edit/Assign PR) -->
+                        <div id="assign_section" class="col-span-1 md:col-span-2 hidden mt-4 border-t border-dashed pt-4 border-gray-300">
+                            <h4 class="text-primary font-semibold mb-3"><i class="fa-solid fa-thumbtack mr-1"></i> ส่วนสำหรับ Assign PR</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-gray-500 mb-1">Project Code</label><input type="text" id="m3_pcode" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none bg-orange-50"></div>
+                                <div><label class="block text-xs font-medium text-gray-500 mb-1">Assignment</label><input type="text" id="m3_assignment" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none bg-orange-50"></div>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Kavis Section -->
+                        <div id="confirm_kavis_section" class="col-span-1 md:col-span-2 hidden mt-4 border-t border-dashed pt-4 border-blue-300">
+                            <h4 class="text-blue-500 font-semibold mb-3"><i class="fa-solid fa-check-double mr-1"></i> ส่วนสำหรับ Confirm Kavis</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-gray-500 mb-1">Confirm Kavis Row</label><input type="text" id="m3_confirm_kavis_row" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-blue-50"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 flex-shrink-0">
+                <button type="button" onclick="closeModal('modal_menu3_create')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
+                <button type="button" onclick="document.getElementById('form_menu3').requestSubmit()" class="px-4 py-2 text-white bg-primary hover:bg-primary-hover rounded-lg text-sm font-medium transition-colors">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // -------------------------------------------------------------
+        // 1. CONFIGURATION & STATE
+        // -------------------------------------------------------------
+        // นำ URL ของ Google Apps Script มาใส่ตรงนี้
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxLkoaaIjhA_N77ggl4IDd_SvqFZb_x-VHz8LyjYs8nPnkFGZn4zKv00BtEcTvL4YR/exec";
+        
+        let db = {
+            menu1: [], // Project Network
+            menu2: [], // Code Route
+            menu2b: [],// Code Building
+            menu3: []  // Assign Project
+        };
+
+        let currentMenu3Tab = 'All'; // State สำหรับเก็บ Tab ปัจจุบันของ Menu 3
+
+        // -------------------------------------------------------------
+        // 2. UI & NAVIGATION CONTROLS
+        // -------------------------------------------------------------
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        const titles = {
+            'menu1_project': 'Project Fiber Network Management',
+            'menu2_route': 'Create Code Route',
+            'menu2b_building': 'Create Code Building',
+            'menu3_assign': 'Assign Project Region & TPD'
+        };
+
+        function navigate(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            // Remove active class from menu
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            
+            // Show target
+            document.getElementById('view_' + viewId).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+            document.getElementById('pageTitle').innerText = titles[viewId];
+            
+            if(window.innerWidth < 1024) toggleSidebar(); // Close sidebar on mobile
+            
+            // Re-render table for the view
+            const dbKey = viewId.split('_')[0];
+            renderTable(dbKey);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            // Reset forms
+            if(modalId === 'modal_menu1') document.getElementById('form_menu1').reset();
+            if(modalId === 'modal_menu2') document.getElementById('form_menu2').reset();
+            if(modalId === 'modal_menu2b') document.getElementById('form_menu2b').reset();
+            if(modalId === 'modal_menu3_create') {
+                document.getElementById('form_menu3').reset();
+                document.getElementById('assign_section').classList.add('hidden');
+                document.getElementById('confirm_kavis_section').classList.add('hidden');
+                document.getElementById('m3_status').value = "Wait assign Project";
+                document.getElementById('title_modal_menu3').innerText = "Create Project";
+                toggleKavisFields(); // รีเซ็ตการซ่อน/แสดงช่อง Kavis
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('globalLoader').style.display = show ? 'flex' : 'none';
+        }
+
+        // -------------------------------------------------------------
+        // 3. DATABASE OPERATIONS (JSONP)
+        // -------------------------------------------------------------
+        function jsonp(action, module, dataObj = null) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
+                window[callbackName] = function(response) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(response);
+                };
+
+                const script = document.createElement('script');
+                script.onerror = () => reject(new Error("Network or CORS error."));
+                
+                let url = `${SCRIPT_URL}?callback=${callbackName}&action=${action}&module=${module}`;
+                if (dataObj) {
+                    // Send data as JSON string payload
+                    url += `&payload=${encodeURIComponent(JSON.stringify(dataObj))}`;
+                }
+                
+                script.src = url;
+                document.body.appendChild(script);
+            });
+        }
+
+        // Initialize Data Load
+        async function loadAllData() {
+            showLoading(true);
+            try {
+                // To prevent app blocking if GAS is not yet setup, we use a timeout wrapper
+                const fetchWithTimeout = (mod) => Promise.race([
+                    jsonp('read', mod),
+                    new Promise((_, r) => setTimeout(() => r({status:'error', msg:'timeout'}), 5000))
+                ]);
+
+                let res1 = await fetchWithTimeout('menu1');
+                if(res1.status === 'success') db.menu1 = res1.data;
+
+                let res2 = await fetchWithTimeout('menu2');
+                if(res2.status === 'success') db.menu2 = res2.data;
+
+                let res2b = await fetchWithTimeout('menu2b');
+                if(res2b.status === 'success') db.menu2b = res2b.data;
+
+                let res3 = await fetchWithTimeout('menu3');
+                if(res3.status === 'success') db.menu3 = res3.data;
+
+                updateDashboards();
+                renderTable('menu1');
+            } catch (error) {
+                console.warn("GAS Connection failed, using local memory mode.", error);
+                // Notification for dev mode
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'info',
+                    title: 'ทำงานในโหมดออฟไลน์ (GAS ยังไม่ได้ตั้งค่า)', showConfirmButton: false, timer: 3000
+                });
+            }
+            showLoading(false);
+        }
+
+        // Generate unique ID
+        const genId = () => Date.now().toString() + Math.floor(Math.random() * 1000).toString();
+
+        // -------------------------------------------------------------
+        // 4. CRUD LOGIC
+        // -------------------------------------------------------------
+        function toggleKavisFields() {
+            const type = document.getElementById('m3_type').value;
+            const kavisInputWrapper = document.getElementById('wrapper_kavis_input');
+            
+            // ซ่อนช่องจองรูเควิส เมื่อเลือก Cancel, Remove Cable
+            if (type === 'Cancel,Remove Cable') {
+                kavisInputWrapper.classList.add('hidden');
+                document.getElementById('m3_reserve_kavis').value = ''; // เคลียร์ค่าทิ้ง
+            } else {
+                kavisInputWrapper.classList.remove('hidden');
+            }
+        }
+
+        function setMenu3Tab(tabName) {
+            currentMenu3Tab = tabName;
+            document.querySelectorAll('.m3-tab-btn').forEach(btn => {
+                const text = btn.innerText;
+                // ถ้าเป็นปุ่ม All หรือ ปุ่มที่มีคำตรงกับ tabName ให้เปลี่ยนเป็นแบบ Active
+                if(tabName === 'All' && text.includes('All')) {
+                    btn.className = 'm3-tab-btn px-4 py-2 text-sm font-medium rounded-t-lg bg-orange-100 text-primary border-b-2 border-primary whitespace-nowrap';
+                } else if(tabName !== 'All' && text.includes(tabName)) {
+                    btn.className = 'm3-tab-btn px-4 py-2 text-sm font-medium rounded-t-lg bg-orange-100 text-primary border-b-2 border-primary whitespace-nowrap';
+                } else {
+                    btn.className = 'm3-tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap border-b-2 border-transparent hover:border-gray-300';
+                }
+            });
+            renderTable('menu3');
+        }
+
+        async function saveData(e, module) {
+            e.preventDefault();
+            
+            let data = { id: document.getElementById(`${module === 'menu1' ? 'm1' : module === 'menu2' ? 'm2' : module === 'menu2b' ? 'm2b' : 'm3'}_id`).value || genId() };
+            let isEdit = !!document.getElementById(`${module === 'menu1' ? 'm1' : module === 'menu2' ? 'm2' : module === 'menu2b' ? 'm2b' : 'm3'}_id`).value;
+
+            // Collect Data
+            if (module === 'menu1') {
+                data.projectNo = document.getElementById('m1_no').value;
+                data.desc = document.getElementById('m1_desc').value;
+                data.owner = document.getElementById('m1_owner').value;
+                data.npPlan = document.getElementById('m1_np').value;
+                data.startDate = document.getElementById('m1_date1').value;
+                data.endDate = document.getElementById('m1_date2').value;
+            } else if (module === 'menu2') {
+                data.code = document.getElementById('m2_code').value;
+                data.desc = document.getElementById('m2_desc').value;
+                
+                // Duplicate Check logic
+                const isCodeExist = db.menu2.some(item => item.code === data.code && item.id !== data.id);
+                const isDescExist = db.menu2.some(item => item.desc === data.desc && item.id !== data.id);
+                if (isCodeExist) return Swal.fire('ข้อมูลซ้ำ', 'Code Route นี้มีในระบบแล้ว!', 'error');
+                if (isDescExist) return Swal.fire('ข้อมูลซ้ำ', 'Description นี้มีในระบบแล้ว!', 'error');
+            } else if (module === 'menu2b') {
+                data.code = document.getElementById('m2b_code').value;
+                data.desc = document.getElementById('m2b_desc').value;
+                
+                const isCodeExist = db.menu2b.some(item => item.code === data.code && item.id !== data.id);
+                const isDescExist = db.menu2b.some(item => item.desc === data.desc && item.id !== data.id);
+                if (isCodeExist) return Swal.fire('ข้อมูลซ้ำ', 'Code Building นี้มีในระบบแล้ว!', 'error');
+                if (isDescExist) return Swal.fire('ข้อมูลซ้ำ', 'Description นี้มีในระบบแล้ว!', 'error');
+            } else if (module === 'menu3') {
+                data.projectType = document.getElementById('m3_type').value;
+                data.date = document.getElementById('m3_date').value;
+                data.project = document.getElementById('m3_project').value;
+                data.cable = document.getElementById('m3_cable').value;
+                data.job = document.getElementById('m3_job').value;
+                data.detail = document.getElementById('m3_detail').value;
+                data.gpsOrigin = document.getElementById('m3_gps_origin').value;
+                data.gpsDest = document.getElementById('m3_gps_dest').value;
+                data.assignBy = document.getElementById('m3_assignby').value;
+                data.sub = document.getElementById('m3_sub').value;
+                data.road = document.getElementById('m3_road').value;
+                data.crossroad = document.getElementById('m3_crossroad').value;
+                data.reserveKavis = document.getElementById('m3_reserve_kavis').value;
+                data.elecConduit = document.getElementById('m3_elec_conduit').value;
+                data.status = document.getElementById('m3_status').value;
+                data.pcode = document.getElementById('m3_pcode').value || "";
+                data.assignment = document.getElementById('m3_assignment').value || "";
+                data.confirmKavisRow = document.getElementById('m3_confirm_kavis_row').value || "";
+
+                if(isEdit && data.pcode && data.assignment) data.status = "Assigned";
+            }
+
+            // Local Update
+            if (isEdit) {
+                const idx = db[module].findIndex(item => item.id === data.id);
+                db[module][idx] = data;
+            } else {
+                db[module].push(data);
+                if(module === 'menu3') {
+                    // Show custom popup for Module 3 Create
+                    Swal.fire({
+                        title: 'สร้างโปรเจกต์สำเร็จ',
+                        text: 'สถานะถูกตั้งเป็น Wait assign Project',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            }
+
+            closeModal(`modal_${module}${module==='menu3'?'_create':''}`);
+            renderTable(module);
+            updateDashboards();
+
+            // Background Sync to GAS
+            showLoading(true);
+            try {
+                await jsonp(isEdit ? 'update' : 'insert', module, data);
+            } catch(e) { console.log('Sync err', e); }
+            showLoading(false);
+
+            if(module !== 'menu3' || isEdit) {
+                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'บันทึกข้อมูลแล้ว', showConfirmButton: false, timer: 1500});
+            }
+        }
+
+        function editData(module, id) {
+            const item = db[module].find(i => i.id === id);
+            if (!item) return;
+
+            if (module === 'menu1') {
+                document.getElementById('m1_id').value = item.id;
+                document.getElementById('m1_no').value = item.projectNo;
+                document.getElementById('m1_desc').value = item.desc;
+                document.getElementById('m1_owner').value = item.owner;
+                document.getElementById('m1_np').value = item.npPlan;
+                document.getElementById('m1_date1').value = item.startDate;
+                document.getElementById('m1_date2').value = item.endDate;
+                document.getElementById('title_modal_menu1').innerText = "แก้ไขข้อมูล Project";
+                openModal('modal_menu1');
+            } else if (module === 'menu2') {
+                document.getElementById('m2_id').value = item.id;
+                document.getElementById('m2_code').value = item.code;
+                document.getElementById('m2_desc').value = item.desc;
+                document.getElementById('title_modal_menu2').innerText = "แก้ไข Code Route";
+                openModal('modal_menu2');
+            } else if (module === 'menu2b') {
+                document.getElementById('m2b_id').value = item.id;
+                document.getElementById('m2b_code').value = item.code;
+                document.getElementById('m2b_desc').value = item.desc;
+                document.getElementById('title_modal_menu2b').innerText = "แก้ไข Code Building";
+                openModal('modal_menu2b');
+            } else if (module === 'menu3') {
+                document.getElementById('m3_id').value = item.id;
+                document.getElementById('m3_type').value = item.projectType || 'Reroute&MOI';
+                document.getElementById('m3_status').value = item.status;
+                document.getElementById('m3_date').value = item.date;
+                document.getElementById('m3_project').value = item.project;
+                document.getElementById('m3_cable').value = item.cable;
+                document.getElementById('m3_job').value = item.job;
+                document.getElementById('m3_detail').value = item.detail;
+                document.getElementById('m3_gps_origin').value = item.gpsOrigin || '';
+                document.getElementById('m3_gps_dest').value = item.gpsDest || '';
+                document.getElementById('m3_assignby').value = item.assignBy;
+                document.getElementById('m3_sub').value = item.sub;
+                document.getElementById('m3_road').value = item.road;
+                document.getElementById('m3_crossroad').value = item.crossroad || '';
+                document.getElementById('m3_reserve_kavis').value = item.reserveKavis || '';
+                document.getElementById('m3_elec_conduit').value = item.elecConduit || '';
+                
+                document.getElementById('m3_pcode').value = item.pcode || "";
+                document.getElementById('m3_assignment').value = item.assignment || "";
+                document.getElementById('m3_confirm_kavis_row').value = item.confirmKavisRow || "";
+                
+                toggleKavisFields();
+
+                document.getElementById('title_modal_menu3').innerText = "Assign PR (แก้ไข)";
+                document.getElementById('assign_section').classList.remove('hidden');
+                document.getElementById('confirm_kavis_section').classList.add('hidden');
+                openModal('modal_menu3_create');
+            }
+        }
+
+        function confirmKavisData(id) {
+            const item = db.menu3.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('m3_id').value = item.id;
+            document.getElementById('m3_type').value = item.projectType || 'Reroute&MOI';
+            document.getElementById('m3_status').value = item.status;
+            document.getElementById('m3_date').value = item.date;
+            document.getElementById('m3_project').value = item.project;
+            document.getElementById('m3_cable').value = item.cable;
+            document.getElementById('m3_job').value = item.job;
+            document.getElementById('m3_detail').value = item.detail;
+            document.getElementById('m3_gps_origin').value = item.gpsOrigin || '';
+            document.getElementById('m3_gps_dest').value = item.gpsDest || '';
+            document.getElementById('m3_assignby').value = item.assignBy;
+            document.getElementById('m3_sub').value = item.sub;
+            document.getElementById('m3_road').value = item.road;
+            document.getElementById('m3_crossroad').value = item.crossroad || '';
+            document.getElementById('m3_reserve_kavis').value = item.reserveKavis || '';
+            document.getElementById('m3_elec_conduit').value = item.elecConduit || '';
+            
+            document.getElementById('m3_pcode').value = item.pcode || "";
+            document.getElementById('m3_assignment').value = item.assignment || "";
+            document.getElementById('m3_confirm_kavis_row').value = item.confirmKavisRow || "";
+            
+            toggleKavisFields();
+
+            document.getElementById('title_modal_menu3').innerText = "Confirm Kavis";
+            document.getElementById('assign_section').classList.add('hidden');
+            document.getElementById('confirm_kavis_section').classList.remove('hidden');
+            openModal('modal_menu3_create');
+        }
+
+        function deleteData(module, id) {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "คุณต้องการลบข้อมูลนี้ใช่หรือไม่ การกระทำนี้ไม่สามารถย้อนกลับได้!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#9ca3af',
+                confirmButtonText: 'ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    db[module] = db[module].filter(item => item.id !== id);
+                    renderTable(module);
+                    updateDashboards();
+                    
+                    showLoading(true);
+                    try { await jsonp('delete', module, {id: id}); } catch(e){}
+                    showLoading(false);
+                    
+                    Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบออกจากระบบ', 'success');
+                }
+            })
+        }
+
+        // -------------------------------------------------------------
+        // 5. RENDER & LOGIC FUNCTIONS
+        // -------------------------------------------------------------
+        function renderTable(module) {
+            const searchVal = document.getElementById(`search_${module}`).value.toLowerCase();
+            const tbody = document.getElementById(`tbody_${module}`);
+            tbody.innerHTML = '';
+
+            let data = db[module];
+
+            // Search Filter Logic
+            if (searchVal) {
+                if(module === 'menu2' || module === 'menu2b') {
+                    data = data.filter(item => item.code.substring(0,2) === searchVal.substring(0,2));
+                } else {
+                    data = data.filter(item => Object.values(item).some(val => String(val).toLowerCase().includes(searchVal)));
+                }
+            }
+
+            // Tab Filter Logic สำหรับ Menu 3
+            if (module === 'menu3' && currentMenu3Tab !== 'All') {
+                data = data.filter(item => item.projectType === currentMenu3Tab);
+            }
+
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="15" class="p-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-50 hover:bg-orange-50/50 transition-colors';
+                
+                let tdContent = '';
+                if(module === 'menu1') {
+                    tdContent = `
+                        <td class="p-4 font-medium text-primary">${item.projectNo}</td>
+                        <td class="p-4">${item.desc}</td>
+                        <td class="p-4">${item.owner}</td>
+                        <td class="p-4">${item.npPlan}</td>
+                        <td class="p-4">${item.startDate}</td>
+                        <td class="p-4">${item.endDate}</td>
+                    `;
+                } else if(module === 'menu2') {
+                    tdContent = `
+                        <td class="p-4 font-mono font-bold text-gray-800 tracking-wider">${item.code}</td>
+                        <td class="p-4">${item.desc}</td>
+                    `;
+                } else if(module === 'menu2b') {
+                    tdContent = `
+                        <td class="p-4 font-mono font-bold text-gray-800 tracking-wider text-blue-600">${item.code}</td>
+                        <td class="p-4">${item.desc}</td>
+                    `;
+                } else if(module === 'menu3') {
+                    const statusClass = item.status === 'Assigned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+                    
+                    // คำนวณสถานะ Confirm Kavis
+                    const isKavisConfirmed = item.confirmKavisRow && item.confirmKavisRow.trim() !== "";
+                    const kavisStatusText = isKavisConfirmed ? 'Confirmed' : 'Wait Confirm Kavis';
+                    const kavisStatusClass = isKavisConfirmed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+
+                    tdContent = `
+                        <td class="p-3 font-medium text-purple-600">${item.projectType || 'Reroute&MOI'}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${item.status}</span></td>
+                        <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${kavisStatusClass}">${kavisStatusText}</span></td>
+                        <td class="p-3 whitespace-nowrap">${item.date}</td>
+                        <td class="p-3 font-bold text-gray-800">${item.pcode || '-'}</td>
+                        <td class="p-3 text-gray-800">${item.assignment || '-'}</td>
+                        <td class="p-3 font-medium text-primary">${item.project}</td>
+                        <td class="p-3">${item.cable}</td>
+                        <td class="p-3">${item.job}</td>
+                        <td class="p-3 max-w-xs truncate" title="${item.detail}">${item.detail}</td>
+                        <td class="p-3 text-xs text-blue-500"><a href="https://maps.google.com/?q=${item.gpsOrigin}" target="_blank"><i class="fa-solid fa-map-marker-alt"></i> ต้นทาง</a></td>
+                        <td class="p-3 text-xs text-blue-500"><a href="https://maps.google.com/?q=${item.gpsDest}" target="_blank"><i class="fa-solid fa-map-marker-alt"></i> ปลายทาง</a></td>
+                        <td class="p-3">${item.assignBy}</td>
+                        <td class="p-3">${item.sub}</td>
+                        <td class="p-3">${item.road}</td>
+                        <td class="p-3">${item.crossroad || '-'}</td>
+                        <td class="p-3">${item.reserveKavis || '-'}</td>
+                        <td class="p-3">${item.elecConduit || '-'}</td>
+                        <td class="p-3 font-bold text-blue-600">${item.confirmKavisRow || '-'}</td>
+                    `;
+                }
+
+                // Action buttons
+                let actionBtn = '';
+                if (module === 'menu3') {
+                    // ตรวจสอบ: ซ่อนปุ่ม Confirm Kavis หากโปรเจกต์เป็นประเภทที่ 3 (Cancel,Remove Cable)
+                    let confirmBtnHTML = (item.projectType !== 'Cancel,Remove Cable') 
+                        ? `<button onclick="confirmKavisData('${item.id}')" class="text-white bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-xs shadow-sm w-full text-left"><i class="fa-solid fa-check-double w-4"></i> Confirm Kavis</button>` 
+                        : '';
+
+                    actionBtn = `<div class="flex flex-col gap-1 min-w-[100px]">
+                         <button onclick="editData('${module}', '${item.id}')" class="text-white bg-primary hover:bg-primary-hover px-2 py-1 rounded text-xs shadow-sm w-full text-left"><i class="fa-solid fa-user-check w-4"></i> Assign PR</button>
+                         ${confirmBtnHTML}
+                         <button onclick="deleteData('${module}', '${item.id}')" class="text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded text-xs shadow-sm w-full text-left"><i class="fa-solid fa-trash w-4"></i> ลบข้อมูล</button>
+                       </div>`;
+                } else {
+                    actionBtn = `<button onclick="editData('${module}', '${item.id}')" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-edit"></i></button>
+                       <button onclick="deleteData('${module}', '${item.id}')" class="text-red-500 hover:text-red-700 mx-1"><i class="fa-solid fa-trash"></i></button>`;
+                }
+
+                tr.innerHTML = tdContent + `<td class="p-4 text-center ${module==='menu3'?'sticky right-0 bg-white shadow-[-5px_0_5px_-5px_rgba(0,0,0,0.1)]':''}">${actionBtn}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateDashboards() {
+            document.getElementById('dash1_total').innerText = db.menu1.length;
+            document.getElementById('dash2_total').innerText = db.menu2.length;
+            
+            const dash2b = document.getElementById('dash2b_total');
+            if(dash2b) dash2b.innerText = db.menu2b.length;
+            
+            const waitCount = db.menu3.filter(i => i.status === 'Wait assign Project').length;
+            document.getElementById('dash3_wait').innerText = waitCount;
+            document.getElementById('dash3_done').innerText = db.menu3.filter(i => i.status === 'Assigned').length;
+
+            // อัปเดตยอด Kavis Dashboard
+            const kavisWaitCount = db.menu3.filter(i => !i.confirmKavisRow || i.confirmKavisRow.trim() === "").length;
+            const kavisDoneCount = db.menu3.filter(i => i.confirmKavisRow && i.confirmKavisRow.trim() !== "").length;
+            
+            const dashKavisWait = document.getElementById('dash3_kavis_wait');
+            const dashKavisDone = document.getElementById('dash3_kavis_done');
+            if(dashKavisWait) dashKavisWait.innerText = kavisWaitCount;
+            if(dashKavisDone) dashKavisDone.innerText = kavisDoneCount;
+
+            // Notification Badge Update
+            const badge = document.getElementById('assignBadge');
+            if(waitCount > 0) {
+                badge.innerText = waitCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 6. AUTO-GENERATE LOGIC (Menu 2)
+        // -------------------------------------------------------------
+        function generateCodeRoute() {
+            const refCode = document.getElementById('auto_ref_code').value.trim().toUpperCase();
+            const typeStr = document.getElementById('auto_type').value; // 1, 2, or 3
+            
+            if (refCode.length !== 6 || !/^[A-Z0-9]+$/.test(refCode)) {
+                return Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกรหัสอ้างอิงให้ครบ 6 หลัก (ตัวอักษรภาษาอังกฤษหรือตัวเลขเท่านั้น)', 'warning');
+            }
+
+            // Determine index from left (Length is 6: 0,1,2,3,4,5)
+            // 1. Backbone = หลักร้อย (3rd from right) -> Index 3
+            // 2. Branch Joint = หลักสิบ (2nd from right) -> Index 4
+            // 3. Branch Access = หลักหน่วย (1st from right) -> Index 5
+            let targetIdx = typeStr === '1' ? 3 : (typeStr === '2' ? 4 : 5);
+
+            let maxNum = -1;
+
+            // Find existing codes matching the base pattern
+            db.menu2.forEach(item => {
+                let existingCode = item.code;
+                if(existingCode.length === 6) {
+                    // Check if all characters EXCEPT target index match the refCode
+                    let match = true;
+                    for(let i=0; i<6; i++) {
+                        if(i !== targetIdx && existingCode[i] !== refCode[i]) {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if(match) {
+                        let currentNum = parseInt(existingCode[targetIdx]);
+                        if(!isNaN(currentNum) && currentNum > maxNum) {
+                            maxNum = currentNum;
+                        }
+                    }
+                }
+            });
+
+            if (maxNum >= 9) {
+                Swal.fire('ไม่สามารถสร้างได้', 'CodeReroute เต็มข้อกำหนดแล้ว (รันครบ 0-9)', 'error');
+            } else {
+                let nextNum = maxNum + 1;
+                // Construct new code
+                let newCode = refCode.substring(0, targetIdx) + nextNum.toString() + refCode.substring(targetIdx + 1);
+                document.getElementById('m2_code').value = newCode;
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'สร้างรหัสสำเร็จ ('+newCode+')', showConfirmButton:false, timer:1500});
+            }
+        }
+
+        function generateCodeBuilding() {
+            const refCode = document.getElementById('auto_ref_code_b').value.trim().toUpperCase();
+            const typeStr = document.getElementById('auto_type_b').value;
+            
+            if (refCode.length !== 6 || !/^[A-Z0-9]+$/.test(refCode)) {
+                return Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกรหัสอ้างอิงให้ครบ 6 หลัก (ตัวอักษรภาษาอังกฤษหรือตัวเลขเท่านั้น)', 'warning');
+            }
+
+            let targetIdx = typeStr === '1' ? 3 : (typeStr === '2' ? 4 : 5);
+            let maxNum = -1;
+
+            db.menu2b.forEach(item => {
+                let existingCode = item.code;
+                if(existingCode.length === 6) {
+                    let match = true;
+                    for(let i=0; i<6; i++) {
+                        if(i !== targetIdx && existingCode[i] !== refCode[i]) {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if(match) {
+                        let currentNum = parseInt(existingCode[targetIdx]);
+                        if(!isNaN(currentNum) && currentNum > maxNum) maxNum = currentNum;
+                    }
+                }
+            });
+
+            if (maxNum >= 9) {
+                Swal.fire('ไม่สามารถสร้างได้', 'CodeBuilding เต็มข้อกำหนดแล้ว (รันครบ 0-9)', 'error');
+            } else {
+                let nextNum = maxNum + 1;
+                let newCode = refCode.substring(0, targetIdx) + nextNum.toString() + refCode.substring(targetIdx + 1);
+                document.getElementById('m2b_code').value = newCode;
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'สร้างรหัสสำเร็จ ('+newCode+')', showConfirmButton:false, timer:1500});
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 7. IMPORT / EXPORT (Menu 2)
+        // -------------------------------------------------------------
+        function handleExport() {
+            if(db.menu2.length === 0) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ Export', 'info');
+            
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM for Thai lang
+            csvContent += "CodeRoute,Description\r\n";
+            db.menu2.forEach(row => {
+                // escape quotes
+                let desc = row.desc ? row.desc.replace(/"/g, '""') : '';
+                csvContent += `"${row.code}","${desc}"\r\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "CodeRoute_Export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleExportBuilding() {
+            if(db.menu2b.length === 0) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ Export', 'info');
+            
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "CodeBuilding,Description\r\n";
+            db.menu2b.forEach(row => {
+                let desc = row.desc ? row.desc.replace(/"/g, '""') : '';
+                csvContent += `"${row.code}","${desc}"\r\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "CodeBuilding_Export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r\n|\n/);
+                let importedCount = 0;
+                let dupCount = 0;
+
+                // Start from 1 to skip header
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    // Simple CSV parser for 2 columns
+                    const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    if (parts.length >= 2) {
+                        let code = parts[0].replace(/^"|"$/g, '').trim();
+                        let desc = parts[1].replace(/^"|"$/g, '').trim();
+
+                        if (code) {
+                            // Check dups
+                            if(!db.menu2.some(item => item.code === code)) {
+                                db.menu2.push({ id: genId(), code: code, desc: desc });
+                                importedCount++;
+                                // Optional: Async sync to GAS here (can be slow for large files)
+                            } else {
+                                dupCount++;
+                            }
+                        }
+                    }
+                }
+                
+                renderTable('menu2');
+                updateDashboards();
+                document.getElementById('importFile').value = ''; // reset
+                Swal.fire('นำเข้าสำเร็จ', `นำเข้าข้อมูลใหม่ ${importedCount} รายการ<br>ซ้ำ/ข้าม ${dupCount} รายการ`, 'success');
+                
+                // Note: Full array sync to GAS should be done via a batch endpoint if real. 
+                // For JSONP limits, we just save locally and warn.
+            };
+            reader.readAsText(file);
+        }
+
+        function handleImportBuilding(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r\n|\n/);
+                let importedCount = 0;
+                let dupCount = 0;
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    if (parts.length >= 2) {
+                        let code = parts[0].replace(/^"|"$/g, '').trim();
+                        let desc = parts[1].replace(/^"|"$/g, '').trim();
+
+                        if (code) {
+                            if(!db.menu2b.some(item => item.code === code)) {
+                                db.menu2b.push({ id: genId(), code: code, desc: desc });
+                                importedCount++;
+                            } else {
+                                dupCount++;
+                            }
+                        }
+                    }
+                }
+                
+                renderTable('menu2b');
+                updateDashboards();
+                document.getElementById('importFile2b').value = ''; 
+                Swal.fire('นำเข้าสำเร็จ', `นำเข้าข้อมูลใหม่ ${importedCount} รายการ<br>ซ้ำ/ข้าม ${dupCount} รายการ`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // Boot
+        window.onload = loadAllData;
+    </script>
+</body>
+</html>
