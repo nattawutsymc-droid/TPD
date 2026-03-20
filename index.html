@@ -40,6 +40,28 @@
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800">
 
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-gray-100 z-[100] flex items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-200">
+            <div class="text-center mb-8">
+                <i class="fa-solid fa-network-wired text-primary text-4xl mb-3"></i>
+                <h1 class="text-2xl font-bold text-gray-800 tracking-wide">Fiber<span class="text-primary">Plan</span></h1>
+                <p class="text-gray-500 text-sm mt-1">กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="login_user" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="login_pass" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                </div>
+                <button type="submit" class="w-full bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg text-sm font-medium transition-colors shadow-md">Sign In</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Mobile Sidebar Overlay -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
@@ -60,7 +82,7 @@
             </div>
 
             <!-- Menu 2 -->
-            <div class="mb-6">
+            <div class="mb-6" id="sidebar_menu2_section">
                 <div class="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Create Code</div>
                 <a href="#" onclick="navigate('menu2_route')" class="sidebar-item flex items-center px-6 py-3 text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors">
                     <i class="fa-solid fa-route w-6 text-center mr-2"></i> Create Code Route
@@ -82,14 +104,15 @@
             </div>
         </div>
         
-        <div class="p-4 border-t border-gray-100">
+        <div class="p-4 border-t border-gray-100 flex justify-between items-center">
             <div class="flex items-center text-sm text-gray-500">
                 <i class="fa-solid fa-circle-user text-2xl mr-2 text-gray-300"></i>
                 <div>
-                    <p class="font-medium text-gray-700">Admin User</p>
-                    <p class="text-xs">System Administrator</p>
+                    <p id="display_username" class="font-medium text-gray-700">Admin User</p>
+                    <p id="display_role" class="text-xs">System Administrator</p>
                 </div>
             </div>
+            <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors" title="ออกจากระบบ"><i class="fa-solid fa-sign-out-alt text-lg"></i></button>
         </div>
     </aside>
 
@@ -127,9 +150,14 @@
                             <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                             <input type="text" id="search_menu1" placeholder="ค้นหา Project No..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm" onkeyup="renderTable('menu1')">
                         </div>
-                        <button onclick="openModal('modal_menu1')" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm w-full sm:w-auto flex items-center justify-center">
-                            <i class="fa-solid fa-plus mr-2"></i> เพิ่มข้อมูล
-                        </button>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button id="btn_export_menu1" onclick="handleExportMenu1()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 sm:flex-none justify-center">
+                                <i class="fa-solid fa-file-export mr-2"></i> Export
+                            </button>
+                            <button id="btn_add_menu1" onclick="openModal('modal_menu1')" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm w-full sm:w-auto flex items-center justify-center">
+                                <i class="fa-solid fa-plus mr-2"></i> เพิ่มข้อมูล
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
@@ -140,8 +168,8 @@
                                     <th class="p-4 font-medium">ผู้รับผิดชอบ</th>
                                     <th class="p-4 font-medium">Name NP Plan</th>
                                     <th class="p-4 font-medium">Start Date</th>
-                                    <th class="p-4 font-medium">End Date</th>
-                                    <th class="p-4 font-medium text-center w-24">จัดการ</th>
+                                    <th class="p-4 font-medium text-center">Assign List</th>
+                                    <th id="th_action_menu1" class="p-4 font-medium text-center w-24">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody_menu1" class="divide-y divide-gray-50 text-gray-700">
@@ -175,6 +203,9 @@
                             <button onclick="handleExport()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 md:flex-none justify-center">
                                 <i class="fa-solid fa-file-export mr-2"></i> Export
                             </button>
+                            <button onclick="clearAllData('menu2')" class="bg-red-50 hover:bg-red-100 text-red-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-200 flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-trash-alt mr-2"></i> ล้างข้อมูล
+                            </button>
                             <button onclick="openModal('modal_menu2')" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center flex-1 md:flex-none justify-center">
                                 <i class="fa-solid fa-plus mr-2"></i> สร้าง Code Route
                             </button>
@@ -186,6 +217,7 @@
                                 <tr class="bg-gray-50 text-gray-600 border-b border-gray-100">
                                     <th class="p-4 font-medium">Code Route</th>
                                     <th class="p-4 font-medium">Description</th>
+                                    <th class="p-4 font-medium">Sub Invent Type</th>
                                     <th class="p-4 font-medium text-center w-24">จัดการ</th>
                                 </tr>
                             </thead>
@@ -294,7 +326,10 @@
                             <button onclick="handleExportBuilding()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 flex items-center flex-1 md:flex-none justify-center">
                                 <i class="fa-solid fa-file-export mr-2"></i> Export
                             </button>
-                            <button onclick="openModal('modal_menu2b')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center flex-1 md:flex-none justify-center">
+                            <button onclick="clearAllData('menu2b')" class="bg-red-50 hover:bg-red-100 text-red-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-200 flex items-center flex-1 md:flex-none justify-center">
+                                <i class="fa-solid fa-trash-alt mr-2"></i> ล้างข้อมูล
+                            </button>
+                            <button onclick="openModal('modal_menu2b')" class="bg-blue-50 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center flex-1 md:flex-none justify-center">
                                 <i class="fa-solid fa-plus mr-2"></i> สร้าง Code Building
                             </button>
                         </div>
@@ -305,6 +340,7 @@
                                 <tr class="bg-gray-50 text-gray-600 border-b border-gray-100">
                                     <th class="p-4 font-medium">Code Building</th>
                                     <th class="p-4 font-medium">Description</th>
+                                    <th class="p-4 font-medium">Sub Invent Type</th>
                                     <th class="p-4 font-medium text-center w-24">จัดการ</th>
                                 </tr>
                             </thead>
@@ -322,44 +358,53 @@
     <!-- ================= MODALS ================= -->
     <!-- Modal: Menu 1 -->
     <div id="modal_menu1" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden transform transition-all">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
                 <h3 class="text-lg font-bold text-gray-800" id="title_modal_menu1">เพิ่มข้อมูล Project</h3>
                 <button onclick="closeModal('modal_menu1')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times text-xl"></i></button>
             </div>
-            <form id="form_menu1" onsubmit="saveData(event, 'menu1')" class="p-6">
-                <input type="hidden" id="m1_id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-2 md:col-span-1">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Project No. <span class="text-red-500">*</span></label>
-                        <input type="text" id="m1_no" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+            <div class="overflow-y-auto p-6 flex-1">
+                <form id="form_menu1" onsubmit="saveData(event, 'menu1')">
+                    <input type="hidden" id="m1_id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project No. <span class="text-red-500">*</span></label>
+                            <input type="text" id="m1_no" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ <span class="text-red-500">*</span></label>
+                            <input type="text" id="m1_owner" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
+                            <input type="text" id="m1_desc" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name NP Plan</label>
+                            <input type="text" id="m1_np" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Plan Date</label>
+                            <input type="date" id="m1_date1" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                        </div>
+                        
+                        <!-- Dynamic Assign List Area -->
+                        <div class="col-span-2 border-t border-gray-200 pt-4 mt-2">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="block text-sm font-medium text-gray-700"><i class="fa-solid fa-list-check text-primary mr-1"></i> รายการ Assign (สามารถเพิ่มได้หลายช่อง)</label>
+                                <button type="button" onclick="addAssignRow()" class="text-xs bg-orange-100 text-primary px-3 py-1.5 rounded hover:bg-orange-200 transition-colors font-medium">+ เพิ่มรายการ</button>
+                            </div>
+                            <div id="m1_assign_list" class="space-y-2">
+                                <!-- Assign rows will be appended here -->
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-span-2 md:col-span-1">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ผู้รับผิดชอบ <span class="text-red-500">*</span></label>
-                        <input type="text" id="m1_owner" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
-                        <input type="text" id="m1_desc" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Name NP Plan</label>
-                        <input type="text" id="m1_np" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Plan Date</label>
-                        <input type="date" id="m1_date1" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">End Plan Date</label>
-                        <input type="date" id="m1_date2" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end gap-3">
-                    <button type="button" onclick="closeModal('modal_menu1')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
-                    <button type="submit" class="px-4 py-2 text-white bg-primary hover:bg-primary-hover rounded-lg text-sm font-medium transition-colors">บันทึกข้อมูล</button>
-                </div>
-            </form>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 flex-shrink-0">
+                <button type="button" onclick="closeModal('modal_menu1')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
+                <button type="button" onclick="document.getElementById('form_menu1').requestSubmit()" class="px-4 py-2 text-white bg-primary hover:bg-primary-hover rounded-lg text-sm font-medium transition-colors">บันทึกข้อมูล</button>
+            </div>
         </div>
     </div>
 
@@ -393,6 +438,10 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Description (ไม่ซ้ำ) <span class="text-red-500">*</span></label>
                     <textarea id="m2_desc" required rows="3" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sub Invent Type</label>
+                    <input type="text" id="m2_sub_invent" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" onclick="closeModal('modal_menu2')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
@@ -432,6 +481,10 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Description (ไม่ซ้ำ) <span class="text-red-500">*</span></label>
                     <textarea id="m2b_desc" required rows="3" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sub Invent Type</label>
+                    <input type="text" id="m2b_sub_invent" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" onclick="closeModal('modal_menu2b')" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">ยกเลิก</button>
@@ -524,10 +577,72 @@
             menu3: []  // Assign Project
         };
 
+        let currentUser = null; // เก็บข้อมูลผู้ใช้ปัจจุบันที่ Login
         let currentMenu3Tab = 'All'; // State สำหรับเก็บ Tab ปัจจุบันของ Menu 3
 
         // -------------------------------------------------------------
-        // 2. UI & NAVIGATION CONTROLS
+        // 2. AUTHENTICATION & PERMISSIONS
+        // -------------------------------------------------------------
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('login_user').value;
+            const pass = document.getElementById('login_pass').value;
+
+            if (user === 'TPDsymc' && pass === 'FiberPlanning') {
+                currentUser = { username: 'TPDsymc', role: 'admin', display: 'TPD Symc' };
+            } else if (user === 'Regionsymc' && pass === 'Region') {
+                currentUser = { username: 'Regionsymc', role: 'region', display: 'Region Symc' };
+            } else {
+                return Swal.fire('Login Failed', 'Username หรือ Password ไม่ถูกต้อง', 'error');
+            }
+
+            // ถ้า Login สำเร็จ
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('display_username').innerText = currentUser.display;
+            document.getElementById('display_role').innerText = currentUser.role === 'admin' ? 'Administrator' : 'Region User';
+            
+            applyPermissions();
+            loadAllData(); // โหลดข้อมูลหลัง Login ผ่าน
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            
+            // เคลียร์ข้อมูลในระบบ
+            db = { menu1: [], menu2: [], menu2b: [], menu3: [] };
+            document.getElementById('tbody_menu1').innerHTML = '';
+            document.getElementById('tbody_menu2').innerHTML = '';
+            document.getElementById('tbody_menu2b').innerHTML = '';
+            document.getElementById('tbody_menu3').innerHTML = '';
+            updateDashboards();
+        }
+
+        function applyPermissions() {
+            if (currentUser.role === 'region') {
+                // ซ่อนเมนู 2 และ 2b สำหรับ Region
+                document.getElementById('sidebar_menu2_section').classList.add('hidden');
+                
+                // เมนู 1 Project Network: ดูได้อย่างเดียว (ซ่อนปุ่มเพิ่ม, Export, และคอลัมน์ Action)
+                document.getElementById('btn_add_menu1').classList.add('hidden');
+                document.getElementById('btn_export_menu1').classList.add('hidden');
+                document.getElementById('th_action_menu1').classList.add('hidden');
+
+                navigate('menu3_assign'); // นำทางไปหน้า Menu 3 เป็นค่าเริ่มต้นสำหรับ Region
+            } else {
+                // Admin คืนค่าการมองเห็นทุกอย่าง
+                document.getElementById('sidebar_menu2_section').classList.remove('hidden');
+                document.getElementById('btn_add_menu1').classList.remove('hidden');
+                document.getElementById('btn_export_menu1').classList.remove('hidden');
+                document.getElementById('th_action_menu1').classList.remove('hidden');
+                
+                navigate('menu1_project'); // นำทางไปหน้า Menu 1 เป็นค่าเริ่มต้นสำหรับ Admin
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 3. UI & NAVIGATION CONTROLS
         // -------------------------------------------------------------
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -568,7 +683,10 @@
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
             // Reset forms
-            if(modalId === 'modal_menu1') document.getElementById('form_menu1').reset();
+            if(modalId === 'modal_menu1') {
+                document.getElementById('form_menu1').reset();
+                document.getElementById('m1_assign_list').innerHTML = ''; // Clear dynamic list
+            }
             if(modalId === 'modal_menu2') document.getElementById('form_menu2').reset();
             if(modalId === 'modal_menu2b') document.getElementById('form_menu2b').reset();
             if(modalId === 'modal_menu3_create') {
@@ -586,7 +704,7 @@
         }
 
         // -------------------------------------------------------------
-        // 3. DATABASE OPERATIONS (JSONP)
+        // 4. DATABASE OPERATIONS (JSONP)
         // -------------------------------------------------------------
         function jsonp(action, module, dataObj = null) {
             return new Promise((resolve, reject) => {
@@ -622,7 +740,26 @@
                 ]);
 
                 let res1 = await fetchWithTimeout('menu1');
-                if(res1.status === 'success') db.menu1 = res1.data;
+                if(res1.status === 'success') {
+                    db.menu1 = res1.data.map(row => {
+                        // แยกข้อมูลจากคอลัมน์ย่อยกลับมาเป็น List สำหรับโชว์ในแอป
+                        let assignArr = [];
+                        for(let i=1; i<=30; i++) {
+                            if (row[`assign_${i}_no`] !== undefined || row[`assign_${i}_desc`] !== undefined) {
+                                if (row[`assign_${i}_no`] || row[`assign_${i}_desc`]) {
+                                    assignArr.push({
+                                        no: row[`assign_${i}_no`] || '',
+                                        desc: row[`assign_${i}_desc`] || ''
+                                    });
+                                }
+                            }
+                        }
+                        if(assignArr.length > 0) {
+                            row.assignList = JSON.stringify(assignArr);
+                        }
+                        return row;
+                    });
+                }
 
                 let res2 = await fetchWithTimeout('menu2');
                 if(res2.status === 'success') db.menu2 = res2.data;
@@ -634,7 +771,14 @@
                 if(res3.status === 'success') db.menu3 = res3.data;
 
                 updateDashboards();
-                renderTable('menu1');
+                
+                // เลือกว่าจะเรนเดอร์ตารางไหนตาม Role
+                if(currentUser.role === 'region') {
+                    renderTable('menu3');
+                } else {
+                    renderTable('menu1');
+                }
+
             } catch (error) {
                 console.warn("GAS Connection failed, using local memory mode.", error);
                 // Notification for dev mode
@@ -650,8 +794,22 @@
         const genId = () => Date.now().toString() + Math.floor(Math.random() * 1000).toString();
 
         // -------------------------------------------------------------
-        // 4. CRUD LOGIC
+        // 5. CRUD LOGIC
         // -------------------------------------------------------------
+        
+        // Functions for Menu 1 Dynamic Assign List
+        function addAssignRow(no = '', desc = '') {
+            const container = document.getElementById('m1_assign_list');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 items-center bg-gray-50 p-2 rounded border border-gray-100 assign-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Assign No." value="${no}" class="assign-no w-1/3 border border-gray-300 rounded p-1.5 text-sm focus:ring-1 focus:ring-primary outline-none">
+                <input type="text" placeholder="Description" value="${desc}" class="assign-desc flex-1 border border-gray-300 rounded p-1.5 text-sm focus:ring-1 focus:ring-primary outline-none">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 rounded" title="ลบรายการ"><i class="fa-solid fa-times"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
         function toggleKavisFields() {
             const type = document.getElementById('m3_type').value;
             const kavisInputWrapper = document.getElementById('wrapper_kavis_input');
@@ -694,10 +852,20 @@
                 data.owner = document.getElementById('m1_owner').value;
                 data.npPlan = document.getElementById('m1_np').value;
                 data.startDate = document.getElementById('m1_date1').value;
-                data.endDate = document.getElementById('m1_date2').value;
+                
+                // Get data from dynamic assign list
+                let assignData = [];
+                document.querySelectorAll('#m1_assign_list .assign-item').forEach(row => {
+                    let no = row.querySelector('.assign-no').value.trim();
+                    let d = row.querySelector('.assign-desc').value.trim();
+                    if(no || d) assignData.push({no: no, desc: d});
+                });
+                data.assignList = JSON.stringify(assignData); // Convert array to JSON string for storage
+
             } else if (module === 'menu2') {
                 data.code = document.getElementById('m2_code').value;
                 data.desc = document.getElementById('m2_desc').value;
+                data.subInvent = document.getElementById('m2_sub_invent').value;
                 
                 // Duplicate Check logic
                 const isCodeExist = db.menu2.some(item => item.code === data.code && item.id !== data.id);
@@ -707,6 +875,7 @@
             } else if (module === 'menu2b') {
                 data.code = document.getElementById('m2b_code').value;
                 data.desc = document.getElementById('m2b_desc').value;
+                data.subInvent = document.getElementById('m2b_sub_invent').value;
                 
                 const isCodeExist = db.menu2b.some(item => item.code === data.code && item.id !== data.id);
                 const isDescExist = db.menu2b.some(item => item.desc === data.desc && item.id !== data.id);
@@ -760,7 +929,20 @@
             // Background Sync to GAS
             showLoading(true);
             try {
-                await jsonp(isEdit ? 'update' : 'insert', module, data);
+                let payloadToGas = { ...data };
+                
+                // แปลงข้อมูล Assign List เป็นคอลัมน์แนวนอนก่อนส่งเข้า GAS
+                if(module === 'menu1') {
+                    delete payloadToGas.assignList; // ไม่ส่ง json string
+                    let parsed = [];
+                    try { parsed = JSON.parse(data.assignList || '[]'); } catch(e){}
+                    parsed.forEach((a, idx) => {
+                        payloadToGas[`assign_${idx + 1}_no`] = a.no;
+                        payloadToGas[`assign_${idx + 1}_desc`] = a.desc;
+                    });
+                }
+                
+                await jsonp(isEdit ? 'update' : 'insert', module, payloadToGas);
             } catch(e) { console.log('Sync err', e); }
             showLoading(false);
 
@@ -780,19 +962,30 @@
                 document.getElementById('m1_owner').value = item.owner;
                 document.getElementById('m1_np').value = item.npPlan;
                 document.getElementById('m1_date1').value = item.startDate;
-                document.getElementById('m1_date2').value = item.endDate;
+                
+                // Load Dynamic Assign List
+                document.getElementById('m1_assign_list').innerHTML = '';
+                if(item.assignList) {
+                    try {
+                        let parsedList = JSON.parse(item.assignList);
+                        parsedList.forEach(assignItem => addAssignRow(assignItem.no, assignItem.desc));
+                    } catch(e) { console.log("Failed to parse assignList", e); }
+                }
+
                 document.getElementById('title_modal_menu1').innerText = "แก้ไขข้อมูล Project";
                 openModal('modal_menu1');
             } else if (module === 'menu2') {
                 document.getElementById('m2_id').value = item.id;
                 document.getElementById('m2_code').value = item.code;
                 document.getElementById('m2_desc').value = item.desc;
+                document.getElementById('m2_sub_invent').value = item.subInvent || '';
                 document.getElementById('title_modal_menu2').innerText = "แก้ไข Code Route";
                 openModal('modal_menu2');
             } else if (module === 'menu2b') {
                 document.getElementById('m2b_id').value = item.id;
                 document.getElementById('m2b_code').value = item.code;
                 document.getElementById('m2b_desc').value = item.desc;
+                document.getElementById('m2b_sub_invent').value = item.subInvent || '';
                 document.getElementById('title_modal_menu2b').innerText = "แก้ไข Code Building";
                 openModal('modal_menu2b');
             } else if (module === 'menu3') {
@@ -884,8 +1077,37 @@
             })
         }
 
+        function clearAllData(module) {
+            Swal.fire({
+                title: 'ยืนยันการล้างข้อมูลทั้งหมด?',
+                text: "ข้อมูลทั้งหมดในหน้านี้จะถูกลบและไม่สามารถกู้คืนได้ (เหมาะสำหรับล้างข้อมูลที่ Import ผิดพลาด)!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#9ca3af',
+                confirmButtonText: 'ใช่, ล้างข้อมูลทั้งหมด!',
+                cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    db[module] = [];
+                    renderTable(module);
+                    updateDashboards();
+                    
+                    showLoading(true);
+                    try { 
+                        await jsonp('clear', module); 
+                    } catch(e) {
+                        console.log('Clear err', e);
+                    }
+                    showLoading(false);
+                    
+                    Swal.fire('ล้างข้อมูลแล้ว!', 'ข้อมูลทั้งหมดถูกลบออกจากระบบ', 'success');
+                }
+            });
+        }
+
         // -------------------------------------------------------------
-        // 5. RENDER & LOGIC FUNCTIONS
+        // 6. RENDER & LOGIC FUNCTIONS
         // -------------------------------------------------------------
         function renderTable(module) {
             const searchVal = document.getElementById(`search_${module}`).value.toLowerCase();
@@ -909,7 +1131,7 @@
             }
 
             if(data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="15" class="p-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="20" class="p-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>`;
                 return;
             }
 
@@ -919,23 +1141,36 @@
                 
                 let tdContent = '';
                 if(module === 'menu1') {
+                    // HTML สำหรับแสดงปุ่ม Popup Assign List แทนการโชว์ทั้งหมด
+                    let assignBtnHtml = '<span class="text-gray-400">-</span>';
+                    if(item.assignList) {
+                        try {
+                            let parsedList = JSON.parse(item.assignList);
+                            if(parsedList.length > 0) {
+                                assignBtnHtml = `<button onclick="viewAssigns('${item.id}')" class="text-xs bg-orange-100 text-primary hover:bg-orange-200 px-4 py-1.5 rounded-full font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fa-solid fa-list-ul mr-1"></i> ดูรายการ (${parsedList.length})</button>`;
+                            }
+                        } catch(e) {}
+                    }
+
                     tdContent = `
                         <td class="p-4 font-medium text-primary">${item.projectNo}</td>
                         <td class="p-4">${item.desc}</td>
                         <td class="p-4">${item.owner}</td>
                         <td class="p-4">${item.npPlan}</td>
                         <td class="p-4">${item.startDate}</td>
-                        <td class="p-4">${item.endDate}</td>
+                        <td class="p-4 text-center">${assignBtnHtml}</td>
                     `;
                 } else if(module === 'menu2') {
                     tdContent = `
                         <td class="p-4 font-mono font-bold text-gray-800 tracking-wider">${item.code}</td>
                         <td class="p-4">${item.desc}</td>
+                        <td class="p-4">${item.subInvent || '-'}</td>
                     `;
                 } else if(module === 'menu2b') {
                     tdContent = `
                         <td class="p-4 font-mono font-bold text-gray-800 tracking-wider text-blue-600">${item.code}</td>
                         <td class="p-4">${item.desc}</td>
+                        <td class="p-4">${item.subInvent || '-'}</td>
                     `;
                 } else if(module === 'menu3') {
                     const statusClass = item.status === 'Assigned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
@@ -986,7 +1221,13 @@
                        <button onclick="deleteData('${module}', '${item.id}')" class="text-red-500 hover:text-red-700 mx-1"><i class="fa-solid fa-trash"></i></button>`;
                 }
 
-                tr.innerHTML = tdContent + `<td class="p-4 text-center ${module==='menu3'?'sticky right-0 bg-white shadow-[-5px_0_5px_-5px_rgba(0,0,0,0.1)]':''}">${actionBtn}</td>`;
+                // การซ่อนคอลัมน์ Action สำหรับผู้ใช้ประเภท Region ใน Menu 1
+                if (module === 'menu1' && currentUser && currentUser.role === 'region') {
+                    tr.innerHTML = tdContent; // ไม่แสดงคอลัมน์ Action
+                } else {
+                    tr.innerHTML = tdContent + `<td class="p-4 text-center ${module==='menu3'?'sticky right-0 bg-white shadow-[-5px_0_5px_-5px_rgba(0,0,0,0.1)]':''}">${actionBtn}</td>`;
+                }
+                
                 tbody.appendChild(tr);
             });
         }
@@ -1022,7 +1263,7 @@
         }
 
         // -------------------------------------------------------------
-        // 6. AUTO-GENERATE LOGIC (Menu 2)
+        // 7. AUTO-GENERATE LOGIC (Menu 2)
         // -------------------------------------------------------------
         function generateCodeRoute() {
             const refCode = document.getElementById('auto_ref_code').value.trim().toUpperCase();
@@ -1111,17 +1352,106 @@
         }
 
         // -------------------------------------------------------------
-        // 7. IMPORT / EXPORT (Menu 2)
+        // 8. IMPORT / EXPORT
         // -------------------------------------------------------------
+        function viewAssigns(id) {
+            const item = db.menu1.find(i => i.id === id);
+            if(!item || !item.assignList) return;
+            
+            try {
+                let parsedList = JSON.parse(item.assignList);
+                if(parsedList.length === 0) return;
+
+                let htmlContent = '<div class="text-left space-y-2 mt-4 max-h-[60vh] overflow-y-auto px-2">';
+                parsedList.forEach((a, idx) => {
+                    htmlContent += `
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Assign No.</div>
+                                <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">#${idx + 1}</span>
+                            </div>
+                            <div class="font-bold text-primary text-base break-all">${a.no || '-'}</div>
+                            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2 mb-1">Description</div>
+                            <div class="text-sm text-gray-700 bg-white p-2 rounded border border-gray-100 break-words">${a.desc || '-'}</div>
+                        </div>
+                    `;
+                });
+                htmlContent += '</div>';
+
+                Swal.fire({
+                    title: `<div class="text-lg">รายการ Assign</div><div class="text-sm font-normal text-gray-500 mt-1">Project: <span class="text-primary font-medium">${item.projectNo}</span></div>`,
+                    html: htmlContent,
+                    confirmButtonText: 'ปิดหน้าต่าง',
+                    confirmButtonColor: '#9ca3af',
+                    width: '450px',
+                    customClass: { title: 'mb-0' }
+                });
+            } catch(e) {}
+        }
+
+        function handleExportMenu1() {
+            if(db.menu1.length === 0) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ Export', 'info');
+            
+            let maxAssigns = 0;
+            db.menu1.forEach(row => {
+                try {
+                    let assigns = JSON.parse(row.assignList || '[]');
+                    if(assigns.length > maxAssigns) maxAssigns = assigns.length;
+                } catch(e) {}
+            });
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            let headers = ["Project No.", "Description", "ผู้รับผิดชอบ", "Name NP Plan", "Start Date"];
+            for(let i=1; i<=maxAssigns; i++) {
+                headers.push(`Assign ${i} No.`);
+                headers.push(`Assign ${i} Description`);
+            }
+            csvContent += headers.map(h => `"${h}"`).join(",") + "\r\n";
+
+            db.menu1.forEach(row => {
+                let rData = [
+                    row.projectNo || '',
+                    row.desc || '',
+                    row.owner || '',
+                    row.npPlan || '',
+                    row.startDate || ''
+                ];
+                
+                let assigns = [];
+                try { assigns = JSON.parse(row.assignList || '[]'); } catch(e){}
+                
+                for(let i=0; i<maxAssigns; i++) {
+                    if(i < assigns.length) {
+                        rData.push(assigns[i].no || '');
+                        rData.push(assigns[i].desc || '');
+                    } else {
+                        rData.push('');
+                        rData.push('');
+                    }
+                }
+                
+                csvContent += rData.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",") + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Project_Fiber_Network_Export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function handleExport() {
             if(db.menu2.length === 0) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ Export', 'info');
             
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM for Thai lang
-            csvContent += "CodeRoute,Description\r\n";
+            csvContent += "CodeRoute,Description,SubInventType\r\n";
             db.menu2.forEach(row => {
                 // escape quotes
                 let desc = row.desc ? row.desc.replace(/"/g, '""') : '';
-                csvContent += `"${row.code}","${desc}"\r\n`;
+                let sub = row.subInvent ? row.subInvent.replace(/"/g, '""') : '';
+                csvContent += `"${row.code}","${desc}","${sub}"\r\n`;
             });
 
             const encodedUri = encodeURI(csvContent);
@@ -1137,10 +1467,11 @@
             if(db.menu2b.length === 0) return Swal.fire('ไม่มีข้อมูล', 'ไม่มีข้อมูลให้ Export', 'info');
             
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
-            csvContent += "CodeBuilding,Description\r\n";
+            csvContent += "CodeBuilding,Description,SubInventType\r\n";
             db.menu2b.forEach(row => {
                 let desc = row.desc ? row.desc.replace(/"/g, '""') : '';
-                csvContent += `"${row.code}","${desc}"\r\n`;
+                let sub = row.subInvent ? row.subInvent.replace(/"/g, '""') : '';
+                csvContent += `"${row.code}","${desc}","${sub}"\r\n`;
             });
 
             const encodedUri = encodeURI(csvContent);
@@ -1168,16 +1499,17 @@
                     const line = lines[i];
                     if (!line.trim()) continue;
                     
-                    // Simple CSV parser for 2 columns
+                    // Simple CSV parser for 2 or 3 columns
                     const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     if (parts.length >= 2) {
                         let code = parts[0].replace(/^"|"$/g, '').trim();
                         let desc = parts[1].replace(/^"|"$/g, '').trim();
+                        let subInvent = parts.length >= 3 ? parts[2].replace(/^"|"$/g, '').trim() : '';
 
                         if (code) {
                             // Check dups
                             if(!db.menu2.some(item => item.code === code)) {
-                                db.menu2.push({ id: genId(), code: code, desc: desc });
+                                db.menu2.push({ id: genId(), code: code, desc: desc, subInvent: subInvent });
                                 importedCount++;
                                 // Optional: Async sync to GAS here (can be slow for large files)
                             } else {
@@ -1191,9 +1523,6 @@
                 updateDashboards();
                 document.getElementById('importFile').value = ''; // reset
                 Swal.fire('นำเข้าสำเร็จ', `นำเข้าข้อมูลใหม่ ${importedCount} รายการ<br>ซ้ำ/ข้าม ${dupCount} รายการ`, 'success');
-                
-                // Note: Full array sync to GAS should be done via a batch endpoint if real. 
-                // For JSONP limits, we just save locally and warn.
             };
             reader.readAsText(file);
         }
@@ -1217,10 +1546,11 @@
                     if (parts.length >= 2) {
                         let code = parts[0].replace(/^"|"$/g, '').trim();
                         let desc = parts[1].replace(/^"|"$/g, '').trim();
+                        let subInvent = parts.length >= 3 ? parts[2].replace(/^"|"$/g, '').trim() : '';
 
                         if (code) {
                             if(!db.menu2b.some(item => item.code === code)) {
-                                db.menu2b.push({ id: genId(), code: code, desc: desc });
+                                db.menu2b.push({ id: genId(), code: code, desc: desc, subInvent: subInvent });
                                 importedCount++;
                             } else {
                                 dupCount++;
@@ -1238,7 +1568,9 @@
         }
 
         // Boot
-        window.onload = loadAllData;
+        window.onload = () => {
+            // ระบบจะรอการ Login ก่อนทำการโหลดข้อมูล
+        };
     </script>
 </body>
 </html>
